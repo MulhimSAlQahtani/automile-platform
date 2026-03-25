@@ -53,3 +53,39 @@ export const checkMileageThresholds = funcs.pubsub
     const users = await admin.firestore().collection("users").get();
     return {processed: users.size};
   });
+
+/**
+ * 3. Atomic Service Logger
+ * Logs history and updates vehicle state atomically
+ */
+export const logServiceAndReset = funcs.https.onCall(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (data: any, context: any) => {
+    if (!context.auth) {
+      throw new funcs.https.HttpsError("unauthenticated", "Login required");
+    }
+
+    const { vehicleId, taskName, currentMileage, cost } = data;
+    const userRef = admin.firestore().collection("users").doc(context.auth.uid);
+    const vehicleRef = userRef.collection("vehicles").doc(vehicleId);
+    const historyRef = vehicleRef.collection("service_history").doc();
+
+    return admin.firestore().runTransaction(async (transaction: any) => {
+      // 1. Log the History
+      transaction.set(historyRef, {
+        taskName,
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        mileage: currentMileage,
+        cost: cost || 0,
+      });
+
+      // 2. Update the Vehicle's "Last Performed" state
+      transaction.update(vehicleRef, {
+        [`last_performed.${taskName.replace(/\s+/g, "_")}`]: currentMileage,
+        last_updated: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return { success: true };
+    });
+  }
+);

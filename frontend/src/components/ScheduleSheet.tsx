@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { MapPin, Calendar, Clock, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Navigation, Star, Search } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -9,114 +9,107 @@ import {
   DrawerFooter,
   DrawerClose,
 } from "@/components/ui/drawer";
-import { toast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+const mockShops = [
+  { id: 1, name: "AutoFix Certified", rating: 4.8, address: "123 Main St, Los Angeles, CA", lat: 34.0522, lng: -118.2437 },
+  { id: 2, name: "City Center Mechanics", rating: 4.6, address: "800 W Olympic Blvd, Los Angeles, CA", lat: 34.0443, lng: -118.2636 },
+];
+
 export default function ScheduleSheet({ open, onOpenChange }: Props) {
   const [location, setLocation] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [shops, setShops] = useState<typeof mockShops>([]);
 
-  const handleSubmit = () => {
-    if (!location || !date || !time) return;
-    setSubmitting(true);
+  // Simulate Firebase Cloud Function Search
+  const handleSearch = () => {
+    setLoading(true);
     setTimeout(() => {
-      setSubmitting(false);
-      onOpenChange(false);
-      toast({
-        title: "✅ Appointment Requested!",
-        description: `We'll confirm your slot on ${date} at ${time} near ${location}.`,
-      });
-      setLocation("");
-      setDate("");
-      setTime("");
-    }, 1500);
+      setShops(mockShops);
+      setLoading(false);
+    }, 1000);
+  };
+
+  // The Exact Cross-Platform Nav Method the USER requested
+  const openInMaps = (address: string, lat: number, lng: number) => {
+    const destination = encodeURIComponent(address);
+    // This logic detects the platform and opens the correct native app
+    const mapUrl = window.navigator.userAgent.includes("iPhone") 
+      ? `maps://?q=${destination}&ll=${lat},${lng}` 
+      : `geo:${lat},${lng}?q=${destination}`;
+      
+    window.open(mapUrl, '_system');
   };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-card border-border">
+      <DrawerContent className="bg-card border-border max-h-[85vh]">
         <DrawerHeader className="text-left">
           <DrawerTitle className="flex items-center gap-2 text-foreground">
             <MapPin className="w-5 h-5 text-primary" />
-            Schedule a Service
+            Find Shop Locations
           </DrawerTitle>
           <DrawerDescription>
-            Find a certified shop near you and book an appointment.
+            Locate highly-rated mechanic shops in your area.
           </DrawerDescription>
         </DrawerHeader>
 
-        <div className="px-4 flex flex-col gap-4">
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
-              Location (Zip Code / City)
-            </label>
-            <div className="relative">
+        <div className="px-4 flex flex-col gap-4 overflow-y-auto max-h-[50vh]">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. 90210 or Los Angeles"
-                className="w-full h-11 pl-9 pr-4 rounded-lg bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                placeholder="Enter Zip Code or City"
+                className="w-full h-11 pl-9 pr-4 rounded-lg bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
+            <button 
+              onClick={handleSearch}
+              className="h-11 px-4 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold"
+            >
+              <Search className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
-                <Calendar className="inline w-3 h-3 mr-1" />
-                Preferred Date
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full h-11 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
-                <Clock className="inline w-3 h-3 mr-1" />
-                Preferred Time
-              </label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="w-full h-11 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-              />
-            </div>
+          <div className="flex flex-col gap-3">
+            {loading && <p className="text-sm text-center text-muted-foreground animate-pulse p-4">Finding shops...</p>}
+            
+            {!loading && shops.map((shop) => (
+              <div key={shop.id} className="p-4 rounded-xl border border-border bg-secondary/50 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-sm text-foreground">{shop.name}</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{shop.address}</p>
+                  </div>
+                  <div className="flex items-center gap-1 bg-warning/10 text-warning px-2 py-1 rounded-md text-xs font-bold">
+                    <Star className="w-3 h-3 fill-current" />
+                    {shop.rating}
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => openInMaps(shop.address, shop.lat, shop.lng)}
+                  className="w-full h-9 rounded-lg border border-primary/30 text-primary text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <Navigation className="w-3 h-3" />
+                  Navigate with Maps
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 
         <DrawerFooter>
-          <button
-            onClick={handleSubmit}
-            disabled={!location || !date || !time || submitting}
-            className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-bold text-sm tracking-wide hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all glow-primary flex items-center justify-center gap-2"
-          >
-            {submitting ? (
-              <>
-                <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                Checking Availability...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Check Availability
-              </>
-            )}
-          </button>
           <DrawerClose asChild>
             <button className="w-full h-10 rounded-lg border border-border text-sm text-muted-foreground hover:bg-secondary transition-all">
-              Cancel
+              Close
             </button>
           </DrawerClose>
         </DrawerFooter>

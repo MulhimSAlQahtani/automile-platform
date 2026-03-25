@@ -15,6 +15,17 @@ interface Props {
 
 function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: number; costMax: number; tip: string }; badge: string; badgeClass: string }) {
   const [open, setOpen] = useState(false);
+  const [marking, setMarking] = useState(false);
+
+  const handleMarkAsDone = () => {
+    setMarking(true);
+    // Simulated Backend Call to logServiceAndReset logic
+    setTimeout(() => {
+      setMarking(false);
+      alert(`Successfully marked ${part.name} as done!`);
+    }, 1200);
+  };
+
   return (
     <div className="rounded-lg border border-border bg-secondary/50 overflow-hidden transition-all">
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-3 text-left">
@@ -35,10 +46,22 @@ function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: 
         </div>
       </button>
       {open && (
-        <div className="px-3 pb-3 pt-0">
-          <div className="p-2.5 rounded-md bg-muted/50 text-xs text-muted-foreground leading-relaxed">
+        <div className="px-3 pb-3 pt-0 flex flex-col gap-3">
+          <div className="p-2.5 rounded-md bg-muted/50 text-xs text-muted-foreground leading-relaxed border border-border/50">
             💡 {part.tip}
           </div>
+          <button 
+            disabled={marking}
+            onClick={handleMarkAsDone}
+            className="w-full h-9 rounded bg-success/10 text-success hover:bg-success/20 transition-colors text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-success/20"
+          >
+            {marking ? (
+              <span className="w-3 h-3 border-2 border-success/30 border-t-success rounded-full animate-spin" />
+            ) : (
+              <CheckCircle className="w-3 h-3" />
+            )}
+            {marking ? "Logging..." : "Mark as Done"}
+          </button>
         </div>
       )}
     </div>
