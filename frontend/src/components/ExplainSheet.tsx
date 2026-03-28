@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { HelpCircle, AlertTriangle, Clock, Sparkles } from "lucide-react";
+import { Sparkles, Bot } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -10,7 +10,6 @@ import {
   DrawerClose,
 } from "@/components/ui/drawer";
 import { MaintenancePart } from "@/lib/maintenance-data";
-import { cn } from "@/lib/utils";
 
 interface Props {
   open: boolean;
@@ -18,62 +17,63 @@ interface Props {
   parts: { part: MaintenancePart; label: string }[];
 }
 
-// Fallback logic if no API key is set
-const fallbackConsequences: Record<string, string> = {
-  "Engine Oil & Oil Filter": "Delaying oil changes causes sludge buildup, accelerated engine wear, and can lead to complete engine failure.",
-  "Air Filter": "A clogged air filter starves the engine of oxygen, reducing power and increasing fuel consumption.",
-  // Add fallback for generic items
-};
-
 export default function ExplainSheet({ open, onOpenChange, parts }: Props) {
-  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [aiResponse, setAiResponse] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open && parts.length > 0) {
-      generateExplanations();
+      generateExplanation();
     }
   }, [open, parts]);
 
-  const generateExplanations = async () => {
+  const generateExplanation = async () => {
     setLoading(true);
-    const newExplanations: Record<string, string> = {};
     
     try {
-      // Simulate an AI fetch (or use real OpenAI/Gemini fetch if VITE_AI_API_KEY is present)
       const apiKey = import.meta.env.VITE_AI_API_KEY;
       
-      if (!apiKey) {
-        // Fallback to simulated AI delay
+      if (!apiKey || apiKey.includes("your-gemini")) {
+        // Fallback simulated response matching the exact structure requested
         await new Promise(resolve => setTimeout(resolve, 1500));
-        parts.forEach(({ part }) => {
-          newExplanations[part.name] = fallbackConsequences[part.name] || `AI analysis indicates that delaying ${part.name} maintenance could lead to severe degradation of related components and increase overall repair costs.`;
-        });
-      } else {
-        // Example Gemini/OpenAI Implementation
-        const prompt = `You are a master mechanic. Explain briefly why neglecting these car parts is dangerous or costly: ${parts.map(p => p.part.name).join(", ")}`;
-        
-        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await response.json();
-        const aiText = data.candidates[0].content.parts[0].text;
-        
-        // Naive split for demo purposes (In real prod, ask for JSON response)
-        parts.forEach(({ part }) => {
-          newExplanations[part.name] = aiText; 
-        });
+        setAiResponse(`Hello! Based on your vehicle's current mileage, here is your maintenance breakdown:\n\n**Critical Replacements Needed Now**\n• ${parts.filter(p => p.label === "Critical").map(p => `${p.part.name} ($${p.part.costMin}-$${p.part.costMax}): Due immediately to prevent compounding mechanical failure.`).join("\n• ")}\n\n**Upcoming Maintenance (Next 5,000 km)**\n• ${parts.filter(p => p.label === "Upcoming").map(p => `${p.part.name} ($${p.part.costMin}-$${p.part.costMax}): Plan for this soon.`).join("\n• ")}\n\n**Maintenance Tip**\nStaying ahead of these intervals maximizes your vehicle's resale value and prevents roadside emergencies.\n\n1. Schedule a service appointment at a certified shop near you?\n2. Get detailed cost estimates for specific repairs?\n3. Would you like me to explain any of these recommendations in more detail?`);
+        setLoading(false);
+        return;
       }
+
+      // Exact prompt structure required by the user
+      const criticalParts = parts.filter(p => p.label === "Critical").map(p => p.part.name).join(", ");
+      const upcomingParts = parts.filter(p => p.label === "Upcoming").map(p => p.part.name).join(", ");
+
+      const prompt = `You are an AI assistant for a mobile automotive maintenance app called "AutoMile Pro." 
+Your task is to analyze vehicle mileage and recommend which spare parts are due for replacement based on standard manufacturer guidelines.
+There are Critical Parts: [${criticalParts}]
+There are Upcoming Parts (Next 5,000km): [${upcomingParts}].
+
+Follow this exact response structure:
+- Start with a friendly greeting and mileage confirmation
+- List "Critical Replacements Needed Now" with bullet points (include part name, reason, and estimated cost range)
+- List "Upcoming Maintenance (Next 5,000 km)" with bullet points (include part name, reason, and estimated cost range)
+- Include a brief maintenance tip section
+- End EXACTLY with these three interactive options:
+  1. "Schedule a service appointment at a certified shop near you?"
+  2. "Get detailed cost estimates for specific repairs?"
+  3. "Would you like me to explain any of these recommendations in more detail?"
+  
+Be conversational and helpful.`;
+      
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await response.json();
+      setAiResponse(data.candidates[0].content.parts[0].text);
     } catch (error) {
       console.error("AI Fetch Failed:", error);
-      parts.forEach(({ part }) => {
-        newExplanations[part.name] = "Ensure this part is serviced to avoid mechanical failure.";
-      });
+      setAiResponse("I'm sorry, I couldn't connect to the AI analysis engine at the moment. Please verify the API connection.");
     }
 
-    setExplanations(newExplanations);
     setLoading(false);
   };
 
@@ -83,10 +83,10 @@ export default function ExplainSheet({ open, onOpenChange, parts }: Props) {
         <DrawerHeader className="text-left">
           <DrawerTitle className="flex items-center gap-2 text-foreground">
             <Sparkles className="w-5 h-5 text-primary" />
-            AI Service Explanations
+            Ella AI Companion
           </DrawerTitle>
           <DrawerDescription>
-            Our AI mechanic explains exactly why you shouldn't ignore these services.
+            Your emotionally intelligent guide to vehicle maintenance.
           </DrawerDescription>
         </DrawerHeader>
 
@@ -94,41 +94,26 @@ export default function ExplainSheet({ open, onOpenChange, parts }: Props) {
           {loading ? (
             <div className="flex flex-col items-center justify-center p-8 gap-3 animate-pulse">
               <Sparkles className="w-8 h-8 text-primary/50 animate-bounce" />
-              <p className="text-sm text-muted-foreground">AI is inspecting your service needs...</p>
+              <p className="text-sm text-muted-foreground">Ella is analyzing your vehicle's profile...</p>
             </div>
           ) : (
-            parts.map(({ part, label }) => (
-              <div key={part.name} className="rounded-lg border border-border bg-secondary/50 p-4">
-                <div className="flex items-start gap-2 mb-2">
-                  {label === "Critical" ? (
-                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                  )}
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{part.name}</p>
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase",
-                      label === "Critical" ? "text-destructive" : "text-warning"
-                    )}>{label}</span>
-                  </div>
+            <div className="rounded-lg border border-border bg-secondary/50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
+                  <Bot className="w-4 h-4 text-primary" />
                 </div>
-                {explanations[part.name] && (
-                  <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
-                    <p className="text-xs text-primary/90 leading-relaxed font-medium">
-                      🤖 <span className="font-bold">AI Diagnosis:</span> {explanations[part.name]}
-                    </p>
-                  </div>
-                )}
+                <div className="text-sm text-foreground space-y-3 whitespace-pre-wrap leading-relaxed">
+                  {aiResponse}
+                </div>
               </div>
-            ))
+            </div>
           )}
         </div>
 
         <DrawerFooter>
           <DrawerClose asChild>
             <button className="w-full h-10 rounded-lg border border-border text-sm text-muted-foreground hover:bg-secondary transition-all">
-              Close
+              Close Companion
             </button>
           </DrawerClose>
         </DrawerFooter>

@@ -1,4 +1,13 @@
-export type VehicleType = "car" | "suv" | "performance" | "ev";
+export type VehicleType = "car" | "suv" | "truck" | "performance" | "ev";
+
+export type QualityTier = "OEM" | "Premium" | "Economy" | "Refurbished";
+
+export const TierMultipliers: Record<QualityTier, { price: number; lifespan: number; title: string; desc: string }> = {
+  OEM: { price: 1.0, lifespan: 1.0, title: "Tier 1: OEM/Dealer", desc: "Exact factory specs, full warranty." },
+  Premium: { price: 0.8, lifespan: 0.95, title: "Tier 2: Premium Aftermarket", desc: "Quality brands, meets/exceeds specs." },
+  Economy: { price: 0.5, lifespan: 0.7, title: "Tier 3: Economy/Value", desc: "Functional replacement, lower cost." },
+  Refurbished: { price: 0.4, lifespan: 0.6, title: "Tier 4: Refurbished", desc: "Cost savings, environmental choice." },
+};
 
 export interface MaintenancePart {
   name: string;
@@ -12,88 +21,112 @@ export interface MaintenancePart {
 }
 
 const baseParts: MaintenancePart[] = [
-  { name: "Engine Oil & Oil Filter", intervalMin: 5000, intervalMax: 8000, costMin: 80, costMax: 120, tip: "Use manufacturer-recommended oil grade. Synthetic oil lasts longer but costs more.", excludeEv: true },
-  { name: "Air Filter", intervalMin: 10000, intervalMax: 15000, costMin: 40, costMax: 80, tip: "A clogged air filter reduces fuel efficiency by up to 10%. Check it every oil change.", excludeEv: true },
-  { name: "Cabin Air Filter", intervalMin: 10000, intervalMax: 15000, costMin: 40, costMax: 80, tip: "Replace more frequently if you drive in dusty or polluted areas." },
-  { name: "Fuel Filter", intervalMin: 20000, intervalMax: 30000, costMin: 100, costMax: 200, tip: "A dirty fuel filter can cause engine misfires and reduced power.", excludeEv: true },
-  { name: "Spark Plugs (Copper)", intervalMin: 20000, intervalMax: 30000, costMin: 100, costMax: 250, tip: "Consider upgrading to iridium plugs for longer service life.", excludeEv: true },
-  { name: "Tire Rotation", intervalMin: 20000, intervalMax: 30000, costMin: 30, costMax: 50, tip: "Regular rotation ensures even wear and extends tire life significantly." },
-  { name: "Transmission Fluid", intervalMin: 40000, intervalMax: 50000, costMin: 150, costMax: 300, tip: "Never mix different types of transmission fluid. Check your manual.", excludeEv: true },
-  { name: "Brake Fluid", intervalMin: 40000, intervalMax: 50000, costMin: 100, costMax: 150, tip: "Brake fluid absorbs moisture over time, reducing braking effectiveness." },
-  { name: "Coolant", intervalMin: 40000, intervalMax: 50000, costMin: 120, costMax: 180, tip: "Never open the radiator cap when the engine is hot." },
-  { name: "Spark Plugs (Iridium/Platinum)", intervalMin: 40000, intervalMax: 50000, costMin: 200, costMax: 400, tip: "Iridium plugs can last up to 100,000 km but should still be inspected.", excludeEv: true },
-  { name: "Timing Belt/Chain", intervalMin: 60000, intervalMax: 80000, costMin: 500, costMax: 1000, tip: "A broken timing belt can cause catastrophic engine damage. Don't delay this.", excludeEv: true },
-  { name: "Water Pump", intervalMin: 60000, intervalMax: 80000, costMin: 400, costMax: 800, tip: "Often replaced alongside the timing belt to save on labor costs.", excludeEv: true },
-  { name: "Drive Belts", intervalMin: 60000, intervalMax: 80000, costMin: 150, costMax: 300, tip: "Look for cracks, fraying, or glazing on the belt surface.", excludeEv: true },
-  { name: "Differential Fluid", intervalMin: 60000, intervalMax: 80000, costMin: 150, costMax: 250, tip: "Especially important for AWD/4WD vehicles.", excludeEv: true },
-  { name: "Brake Pads & Rotors", intervalMin: 80000, intervalMax: 100000, costMin: 300, costMax: 800, tip: "Listen for squealing sounds—that's the wear indicator telling you it's time." },
-  { name: "Suspension Components", intervalMin: 80000, intervalMax: 100000, costMin: 500, costMax: 1500, tip: "Worn shocks increase stopping distance by up to 20%." },
-  { name: "Battery", intervalMin: 80000, intervalMax: 100000, costMin: 150, costMax: 300, tip: "Clean battery terminals regularly to prevent corrosion and starting issues." },
-  { name: "Clutch (Manual)", intervalMin: 100000, intervalMax: 100000, costMin: 1200, costMax: 2000, tip: "Avoid riding the clutch in traffic to extend its life.", excludeEv: true },
-  { name: "Wheel Bearings", intervalMin: 100000, intervalMax: 100000, costMin: 400, costMax: 800, tip: "A humming noise that changes with speed often indicates worn bearings." },
-  { name: "CV Joints/Axles", intervalMin: 100000, intervalMax: 100000, costMin: 600, costMax: 1200, tip: "Check CV boot integrity regularly—torn boots lead to joint failure.", excludeEv: true },
-  { name: "Oxygen Sensors", intervalMin: 100000, intervalMax: 100000, costMin: 300, costMax: 600, tip: "Faulty O2 sensors can reduce fuel economy by up to 40%.", excludeEv: true },
+  { name: "Engine Oil & Oil Filter", intervalMin: 5000, intervalMax: 8000, costMin: 80, costMax: 120, tip: "Regular oil changes prevent sludge buildup and engine wear.", excludeEv: true },
+  { name: "Air Filter", intervalMin: 10000, intervalMax: 15000, costMin: 40, costMax: 80, tip: "A clean filter improves fuel efficiency and engine performance.", excludeEv: true },
+  { name: "Cabin Air Filter", intervalMin: 10000, intervalMax: 15000, costMin: 40, costMax: 80, tip: "Keeps HVAC efficient and air quality fresh inside." },
+  { name: "Fuel Filter", intervalMin: 20000, intervalMax: 30000, costMin: 100, costMax: 200, tip: "Prevents hesitation and protects the fuel pump.", excludeEv: true },
+  { name: "Spark Plugs (Copper)", intervalMin: 20000, intervalMax: 30000, costMin: 100, costMax: 250, tip: "Replace to avoid misfires and reduced MPG.", excludeEv: true },
+  { name: "Tire Rotation", intervalMin: 20000, intervalMax: 30000, costMin: 30, costMax: 50, tip: "Extends tire life and improves wet traction." },
+  { name: "Transmission Fluid", intervalMin: 40000, intervalMax: 50000, costMin: 150, costMax: 300, tip: "Old fluid causes harsh shifts and can ruin the gearbox.", excludeEv: true },
+  { name: "Brake Fluid", intervalMin: 40000, intervalMax: 50000, costMin: 100, costMax: 150, tip: "Absorbs moisture over time. Flush to maintain stopping power." },
+  { name: "Coolant", intervalMin: 40000, intervalMax: 50000, costMin: 120, costMax: 180, tip: "Regulates temp and prevents internal corrosion." },
+  { name: "Spark Plugs (Iridium/Platinum)", intervalMin: 40000, intervalMax: 50000, costMin: 200, costMax: 400, tip: "Longer life plugs, highly reliable.", excludeEv: true },
+  { name: "Timing Belt/Chain", intervalMin: 60000, intervalMax: 80000, costMin: 500, costMax: 1000, tip: "Catastrophic engine damage occurs if this snaps.", excludeEv: true },
+  { name: "Water Pump", intervalMin: 60000, intervalMax: 80000, costMin: 400, costMax: 800, tip: "Prevents overheating; often done with the timing belt.", excludeEv: true },
+  { name: "Drive Belts", intervalMin: 60000, intervalMax: 80000, costMin: 150, costMax: 300, tip: "Powers alternator and A/C. Inspect for cracks.", excludeEv: true },
+  { name: "Differential Fluid", intervalMin: 60000, intervalMax: 80000, costMin: 150, costMax: 250, tip: "Crucial for AWD/4WD to prevent gear grinding.", excludeEv: true },
+  { name: "Brake Pads & Rotors", intervalMin: 80000, intervalMax: 100000, costMin: 300, costMax: 800, tip: "Critical safety component. Don't wait for metal-on-metal." },
+  { name: "Suspension Components", intervalMin: 80000, intervalMax: 100000, costMin: 500, costMax: 1500, tip: "Maintains stability and prevents hazardous body roll." },
+  { name: "Battery", intervalMin: 80000, intervalMax: 100000, costMin: 150, costMax: 300, tip: "Have it load-tested. Extreme temps shorten life." },
+  { name: "Clutch (Manual)", intervalMin: 100000, intervalMax: 120000, costMin: 1200, costMax: 2000, tip: "Slipping wastes fuel and destroys the flywheel.", excludeEv: true },
+  { name: "Wheel Bearings", intervalMin: 100000, intervalMax: 120000, costMin: 400, costMax: 800, tip: "A grinding or humming noise means immediate replacement." },
+  { name: "CV Joints/Axles", intervalMin: 100000, intervalMax: 120000, costMin: 600, costMax: 1200, tip: "Clicking on turns indicates joint failure.", excludeEv: true },
+  { name: "Oxygen Sensors", intervalMin: 100000, intervalMax: 120000, costMin: 300, costMax: 600, tip: "Failing O2 sensors ruin fuel economy and catalytic converters.", excludeEv: true },
 ];
 
 const evParts: MaintenancePart[] = [
-  { name: "Tire Rotation", intervalMin: 15000, intervalMax: 15000, costMin: 30, costMax: 50, tip: "EVs are heavier, causing faster tire wear. Rotate more frequently.", evOnly: true },
-  { name: "Brake Fluid", intervalMin: 40000, intervalMax: 40000, costMin: 100, costMax: 150, tip: "Regenerative braking means less wear, but fluid still degrades.", evOnly: true },
-  { name: "Cabin Air Filter", intervalMin: 10000, intervalMax: 15000, costMin: 40, costMax: 80, tip: "Same interval as ICE vehicles—air quality matters regardless of powertrain.", evOnly: true },
-  { name: "Coolant (Battery/Motor)", intervalMin: 80000, intervalMax: 80000, costMin: 120, costMax: 180, tip: "EV coolant systems are critical for battery longevity and performance.", evOnly: true },
-  { name: "Battery Health Check", intervalMin: 40000, intervalMax: 40000, costMin: 0, costMax: 50, tip: "Monitor battery degradation. Keep charge between 20-80% for longevity.", evOnly: true },
+  { name: "Tire Rotation", intervalMin: 15000, intervalMax: 15000, costMin: 30, costMax: 50, tip: "EVs are heavier with instant torque, causing faster tire wear.", evOnly: true },
+  { name: "Brake Fluid", intervalMin: 40000, intervalMax: 40000, costMin: 100, costMax: 150, tip: "Even with regenerative braking, fluid absorbs moisture.", evOnly: true },
+  { name: "Cabin Air Filter", intervalMin: 10000, intervalMax: 15000, costMin: 40, costMax: 80, tip: "Air quality matters regardless of powertrain.", evOnly: true },
+  { name: "Coolant (Battery/Motor)", intervalMin: 80000, intervalMax: 80000, costMin: 120, costMax: 180, tip: "EV coolant systems are critical for preventing thermal runaway.", evOnly: true },
+  { name: "Battery Health Check", intervalMin: 40000, intervalMax: 40000, costMin: 0, costMax: 50, tip: "Monitor degradation early to prevent massive replacement costs.", evOnly: true },
 ];
 
 export function getPartsForVehicle(type: VehicleType): MaintenancePart[] {
-  if (type === "ev") return evParts;
-  return baseParts.filter(p => !p.excludeEv);
+  if (type === "ev") return [...evParts, ...baseParts.filter(p => !p.excludeEv && !evParts.some(e => e.name === p.name))];
+  return baseParts.filter(p => !p.evOnly);
 }
 
 export function getIntervalMultiplier(type: VehicleType): number {
-  if (type === "suv") return 0.75;
-  if (type === "performance") return 0.8;
+  if (type === "suv" || type === "truck") return 0.75; // 25% shorter intervals for heavy duty
+  if (type === "performance") return 0.8; // 20% shorter
   return 1;
 }
 
 export interface AnalysisResult {
-  critical: { part: MaintenancePart; lastDue: number }[];
-  upcoming: { part: MaintenancePart; dueAt: number }[];
+  critical: { part: MaintenancePart; dueAt: number; remainingKm: number }[];
+  upcoming: { part: MaintenancePart; dueAt: number; remainingKm: number }[];
   ok: MaintenancePart[];
 }
 
-export function analyzeMileage(mileage: number, vehicleType: VehicleType): AnalysisResult {
-  const parts = getPartsForVehicle(vehicleType);
-  const multiplier = getIntervalMultiplier(vehicleType);
+// User-provided vehicle state for dynamic calculations
+export interface VehicleState {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  vin: string;
+  currentMileage: number;
+  type: VehicleType;
+  lastPerformedMileage: Record<string, number>; // Maps Part Name -> Mileage it was last changed
+}
+
+export function analyzeMileageAdvanced(state: VehicleState, tierSettings: Record<string, QualityTier> = {}): AnalysisResult {
+  const parts = getPartsForVehicle(state.type);
+  const multiplier = getIntervalMultiplier(state.type);
+  
   const critical: AnalysisResult["critical"] = [];
   const upcoming: AnalysisResult["upcoming"] = [];
   const ok: MaintenancePart[] = [];
 
   for (const part of parts) {
-    const interval = Math.round(part.intervalMax * multiplier);
-    if (interval === 0) continue;
-    const cyclesPassed = Math.floor(mileage / interval);
-    const lastDue = cyclesPassed * interval;
-    const nextDue = (cyclesPassed + 1) * interval;
-    const kmSinceLast = mileage - lastDue;
+    // 1. Calculate the exact interval for THIS vehicle type and requested Parts Tier
+    const tierMultiplier = TierMultipliers[tierSettings[part.name] || "OEM"].lifespan;
+    const effectiveInterval = Math.round(part.intervalMax * multiplier * tierMultiplier);
+    
+    // 2. Determine when it was last changed (Fallback to naive cycle calculation if no history exists)
+    const historyMileage = state.lastPerformedMileage[part.name];
+    let nextDue = 0;
+    
+    if (historyMileage !== undefined) {
+      // Dynamic Calculation: Exact Due Date Based on Last Change!
+      nextDue = historyMileage + effectiveInterval;
+    } else {
+      // Naive Calculation: Predict based on total odometer (Standard logic)
+      const cyclesPassed = Math.floor(state.currentMileage / effectiveInterval);
+      nextDue = (cyclesPassed + 1) * effectiveInterval;
+      
+      // If they are exactly on cycle or past it by a bit, they missed it
+      if (cyclesPassed > 0 && (state.currentMileage - (cyclesPassed * effectiveInterval)) < 2000) {
+        nextDue = cyclesPassed * effectiveInterval; 
+      }
+    }
 
-    if (cyclesPassed > 0 && kmSinceLast < 2000) {
-      // Recently due or overdue
-      critical.push({ part, lastDue });
-    } else if (nextDue - mileage <= 5000) {
-      upcoming.push({ part, dueAt: nextDue });
+    const remainingKm = nextDue - state.currentMileage;
+
+    // 3. Categorize into urgency buckets
+    if (remainingKm <= 0) {
+      critical.push({ part, dueAt: nextDue, remainingKm });
+    } else if (remainingKm <= 5000) {
+      upcoming.push({ part, dueAt: nextDue, remainingKm });
     } else {
       ok.push(part);
     }
   }
 
-  // Also mark overdue items as critical
-  for (const part of parts) {
-    const interval = Math.round(part.intervalMax * multiplier);
-    if (interval === 0) continue;
-    const remainder = mileage % interval;
-    if (remainder > interval * 0.9 && !critical.some(c => c.part.name === part.name) && !upcoming.some(u => u.part.name === part.name)) {
-      upcoming.push({ part, dueAt: mileage + (interval - remainder) });
-    }
-  }
-
-  return { critical, upcoming, ok };
+  return { 
+    critical: critical.sort((a,b) => a.remainingKm - b.remainingKm), 
+    upcoming: upcoming.sort((a,b) => a.remainingKm - b.remainingKm), 
+    ok 
+  };
 }

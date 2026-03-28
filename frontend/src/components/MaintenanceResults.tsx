@@ -1,14 +1,18 @@
-import { AnalysisResult, VehicleType } from "@/lib/maintenance-data";
-import { AlertTriangle, Clock, CheckCircle, ChevronDown, ChevronUp, ArrowLeft, MapPin, DollarSign, HelpCircle, Wrench } from "lucide-react";
-import { useState } from "react";
+import { AnalysisResult, VehicleState, VehicleType } from "@/lib/maintenance-data";
+import { AlertTriangle, Clock, CheckCircle, ChevronDown, ChevronUp, ArrowLeft, MapPin, DollarSign, HelpCircle, Wrench, ShieldCheck, Tag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import ScheduleSheet from "./ScheduleSheet";
 import CostEstimatorSheet from "./CostEstimatorSheet";
 import ExplainSheet from "./ExplainSheet";
+import HealthGauge from "./HealthGauge";
+import ScheduleOptimizer from "./ScheduleOptimizer";
+import { calculateFailureProbabilities, calculateHealthScore } from "@/lib/ml-engine";
+import { optimizeScheduleBundles } from "@/lib/tco-calculator";
 
 interface Props {
-  mileage: number;
-  vehicleType: VehicleType;
+  vehicleState: VehicleState;
   result: AnalysisResult;
   onBack: () => void;
 }
@@ -16,6 +20,7 @@ interface Props {
 function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: number; costMax: number; tip: string }; badge: string; badgeClass: string }) {
   const [open, setOpen] = useState(false);
   const [marking, setMarking] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const handleMarkAsDone = () => {
     setMarking(true);
@@ -26,23 +31,34 @@ function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: 
     }, 1200);
   };
 
+  const [isPremium, setIsPremium] = useState(false);
+
+  const displayCostMin = isPremium ? Math.round(part.costMin * 1.5) : part.costMin;
+  const displayCostMax = isPremium ? Math.round(part.costMax * 1.5) : part.costMax;
+
   return (
-    <div className="rounded-lg border border-border bg-secondary/50 overflow-hidden transition-all">
+    <div className={cn("rounded-lg border border-border overflow-hidden transition-all", isPremium ? "bg-primary/5 border-primary/30 shadow-sm" : "bg-secondary/50")}>
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-3 text-left">
         <div className="flex items-center gap-3 min-w-0">
           <Wrench className="w-4 h-4 text-muted-foreground shrink-0" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{part.name}</p>
-            <p className="text-xs text-muted-foreground">
-              ${part.costMin}–${part.costMax}
+            <p className={cn("text-xs flex items-center gap-1", isPremium ? "text-primary font-bold" : "text-muted-foreground")}>
+              <DollarSign className="w-3 h-3" />
+              {displayCostMin.toLocaleString()}–{displayCostMax.toLocaleString()}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col items-end gap-1 shrink-0">
           <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded-full", badgeClass)}>
             {badge}
           </span>
-          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          <div className="flex items-center gap-1">
+            <ShieldCheck className={cn("w-3 h-3", isPremium ? "text-primary" : "text-primary/70")} />
+            <span className={cn("text-[10px] uppercase font-bold", isPremium ? "text-primary" : "text-muted-foreground")}>
+              {isPremium ? "Premium Performance" : "OEM Standard"}
+            </span>
+          </div>
         </div>
       </button>
       {open && (
@@ -50,38 +66,65 @@ function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: 
           <div className="p-2.5 rounded-md bg-muted/50 text-xs text-muted-foreground leading-relaxed border border-border/50">
             💡 {part.tip}
           </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <button 
+              onClick={() => setIsPremium(!isPremium)}
+              className={cn(
+                "h-8 rounded transition-colors text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 border",
+                isPremium ? "bg-primary text-primary-foreground border-primary" : "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20"
+              )}
+            >
+              <Tag className="w-3 h-3" />
+              {isPremium ? "Standard Quality" : "Upgrade to Premium"}
+            </button>
+            <button 
+              disabled={marking}
+              onClick={handleMarkAsDone}
+              className="h-8 rounded bg-success/10 text-success hover:bg-success/20 transition-colors text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 border border-success/20"
+            >
+              {marking ? (
+                <span className="w-3 h-3 border-2 border-success/30 border-t-success rounded-full animate-spin" />
+              ) : (
+                <CheckCircle className="w-3 h-3" />
+              )}
+              {marking ? "Logging..." : "Mark as Done"}
+            </button>
+          </div>
           <button 
-            disabled={marking}
-            onClick={handleMarkAsDone}
-            className="w-full h-9 rounded bg-success/10 text-success hover:bg-success/20 transition-colors text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-success/20"
+             onClick={() => setScheduleOpen(true)}
+             className="w-full h-9 mt-1 rounded-lg bg-secondary border border-border/50 text-muted-foreground text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-secondary/80 hover:text-foreground transition-all"
           >
-            {marking ? (
-              <span className="w-3 h-3 border-2 border-success/30 border-t-success rounded-full animate-spin" />
-            ) : (
-              <CheckCircle className="w-3 h-3" />
-            )}
-            {marking ? "Logging..." : "Mark as Done"}
+             <MapPin className="w-3.5 h-3.5" /> Book Single Repair Shop
           </button>
         </div>
       )}
+      <ScheduleSheet open={scheduleOpen} onOpenChange={setScheduleOpen} partName={part.name} />
     </div>
   );
 }
 
-export default function MaintenanceResults({ mileage, vehicleType, result, onBack }: Props) { 
+export default function MaintenanceResults({ vehicleState, result, onBack }: Props) { 
   const vehicleLabels: Record<VehicleType, string> = {
     car: "Passenger Car",
     suv: "SUV / Truck",
-    performance: "Performance Vehicle",
+    truck: "SUV / Truck",
+    performance: "Performance",
     ev: "Electric Vehicle",
   };
 
+  const navigate = useNavigate();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
   const [explainOpen, setExplainOpen] = useState(false);
 
   const totalCritical = result.critical.length;
   const totalUpcoming = result.upcoming.length;
+
+  // ML Processing Pipelines
+  const failurePredictions = calculateFailureProbabilities(result);
+  const healthContext = calculateHealthScore(result, failurePredictions);
+  const bundleOptimizations = optimizeScheduleBundles(result);
 
   const allParts = [
     ...result.critical.map(({ part }) => ({ part, label: "Critical" as const })),
@@ -96,29 +139,32 @@ export default function MaintenanceResults({ mileage, vehicleType, result, onBac
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-foreground">Maintenance Report</h2>
+          <h2 className="text-lg font-bold text-foreground">
+            {vehicleState.year} {vehicleState.make} {vehicleState.model}
+          </h2>
           <p className="text-xs text-muted-foreground">
-            {vehicleLabels[vehicleType]} • {mileage.toLocaleString()} km
+            {vehicleLabels[vehicleState.type]} • {vehicleState.currentMileage.toLocaleString()} km
           </p>
         </div>
       </div>
 
-      {/* Summary Bar */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="flex flex-col items-center p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-          <AlertTriangle className="w-5 h-5 text-destructive mb-1" />
-          <span className="text-lg font-bold text-destructive">{totalCritical}</span>
-          <span className="text-[10px] text-destructive/70 uppercase font-medium">Critical</span>
+      {/* Primary ML Health Gauge Visualization */}
+      <HealthGauge context={healthContext} />
+
+      {/* Schedule Optimizer (Bundles overlapping parts) */}
+      <ScheduleOptimizer bundles={bundleOptimizations} />
+
+      {/* Summary Chips */}
+      <div className="grid grid-cols-2 gap-3 mt-2">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 flex flex-col items-center justify-center">
+          <AlertTriangle className="w-6 h-6 text-destructive mb-2" />
+          <span className="text-3xl font-black text-destructive leading-none">{totalCritical}</span>
+          <span className="text-[10px] font-bold text-destructive/80 uppercase tracking-widest mt-1">Critical</span>
         </div>
-        <div className="flex flex-col items-center p-3 rounded-lg bg-warning/10 border border-warning/20">
-          <Clock className="w-5 h-5 text-warning mb-1" />
-          <span className="text-lg font-bold text-warning">{totalUpcoming}</span>
-          <span className="text-[10px] text-warning/70 uppercase font-medium">Upcoming</span>
-        </div>
-        <div className="flex flex-col items-center p-3 rounded-lg bg-success/10 border border-success/20">
-          <CheckCircle className="w-5 h-5 text-success mb-1" />
-          <span className="text-lg font-bold text-success">{result.ok.length}</span>
-          <span className="text-[10px] text-success/70 uppercase font-medium">Good</span>
+        <div className="rounded-xl border border-warning/20 bg-warning/10 p-3 flex flex-col items-center justify-center">
+          <Clock className="w-6 h-6 text-warning mb-2" />
+          <span className="text-3xl font-black text-warning leading-none">{totalUpcoming}</span>
+          <span className="text-[10px] font-bold text-warning/80 uppercase tracking-widest mt-1">Upcoming</span>
         </div>
       </div>
 
@@ -152,7 +198,7 @@ export default function MaintenanceResults({ mileage, vehicleType, result, onBac
               <PartCard
                 key={part.name}
                 part={part}
-                badge={`~${(dueAt - mileage).toLocaleString()} km`}
+                badge={`Due in ${(dueAt - vehicleState.currentMileage).toLocaleString()} km`}
                 badgeClass="bg-warning/20 text-warning"
               />
             ))}
@@ -176,7 +222,11 @@ export default function MaintenanceResults({ mileage, vehicleType, result, onBac
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
           What would you like to do next?
         </h3>
-        <InteractiveButton icon={MapPin} label="Find a certified shop near you" onClick={() => setScheduleOpen(true)} />
+        <InteractiveButton 
+          icon={MapPin} 
+          label="Find a certified shop near you" 
+          onClick={() => navigate('/app/shops')} 
+        />
         <InteractiveButton icon={DollarSign} label="Get detailed cost estimates" onClick={() => setCostOpen(true)} />
         <InteractiveButton icon={HelpCircle} label="Explain these recommendations" onClick={() => setExplainOpen(true)} />
       </section>
