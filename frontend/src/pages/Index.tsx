@@ -23,37 +23,9 @@ const Index = () => {
     }
 
     if (auth?.app?.name === "mock-app") {
-      // Use mock data if in mock mode
-      const mockGarage: VehicleState[] = [
-        {
-          id: "v1",
-          make: "Toyota",
-          model: "Camry",
-          year: 2022,
-          vin: "JTN11111000000",
-          currentMileage: 54000,
-          type: "car",
-          lastPerformedMileage: {
-            "Engine Oil & Oil Filter": 49000,
-            "Air Filter": 30000,
-          }
-        },
-        {
-          id: "v2",
-          make: "Ford",
-          model: "F-150",
-          year: 2019,
-          vin: "1FT11111000000",
-          currentMileage: 110000,
-          type: "truck",
-          lastPerformedMileage: {
-            "Engine Oil & Oil Filter": 105000,
-            "Transmission Fluid": 80000,
-            "Spark Plugs (Copper)": 90000
-          }
-        }
-      ];
-      setVehicles(mockGarage);
+      // Use mock data from local storage if in mock mode
+      const storedVehicles = JSON.parse(localStorage.getItem("mock_vehicles") || "[]");
+      setVehicles(storedVehicles);
       setLoading(false);
       return;
     }

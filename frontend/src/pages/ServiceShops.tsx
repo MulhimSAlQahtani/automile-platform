@@ -124,19 +124,13 @@ export default function ServiceShops() {
                     <MapPin className="w-3 h-3 inline mr-1" /> {shop.vicinity}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div className="mt-2 text-center">
                     <Button 
                       variant="outline" 
-                      className="h-10 text-xs font-bold border-border hover:bg-secondary"
+                      className="w-full h-10 text-xs font-bold border-border hover:bg-secondary justify-center flex items-center"
                       onClick={() => openInMaps(shop)}
                     >
-                      <Navigation className="w-3.5 h-3.5 mr-2" /> Directions
-                    </Button>
-                    <Button 
-                      className="h-10 text-xs font-black uppercase tracking-wider shadow-md shadow-primary/10"
-                      onClick={() => toast.info("Booking flow coming soon!")}
-                    >
-                      Book Now
+                      <Navigation className="w-3.5 h-3.5 mr-2" /> View Directions
                     </Button>
                   </div>
                 </div>

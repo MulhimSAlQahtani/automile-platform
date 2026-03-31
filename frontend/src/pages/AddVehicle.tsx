@@ -61,6 +61,19 @@ export default function AddVehicle() {
       
       if (auth?.app?.name === "mock-app") {
         await new Promise((resolve) => setTimeout(resolve, 800));
+        
+        // Save to local storage for realistic flow
+        const existing = JSON.parse(localStorage.getItem("mock_vehicles") || "[]");
+        const newVehicle = {
+          id: "v_" + Date.now(),
+          ...formData,
+          vin: sanitizedVin,
+          currentMileage: Number(formData.currentMileage),
+          year: Number(formData.year),
+          lastPerformedMileage: {},
+        };
+        localStorage.setItem("mock_vehicles", JSON.stringify([newVehicle, ...existing]));
+
         hapticFeedback.success();
         toast.success("Mock UI Mode: Vehicle Registered Locally!");
         navigate("/app");

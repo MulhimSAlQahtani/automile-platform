@@ -3,13 +3,10 @@ import { AlertTriangle, Clock, CheckCircle, ChevronDown, ChevronUp, ArrowLeft, M
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import ScheduleSheet from "./ScheduleSheet";
 import CostEstimatorSheet from "./CostEstimatorSheet";
 import ExplainSheet from "./ExplainSheet";
 import HealthGauge from "./HealthGauge";
-import ScheduleOptimizer from "./ScheduleOptimizer";
 import { calculateFailureProbabilities, calculateHealthScore } from "@/lib/ml-engine";
-import { optimizeScheduleBundles } from "@/lib/tco-calculator";
 
 interface Props {
   vehicleState: VehicleState;
@@ -20,7 +17,6 @@ interface Props {
 function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: number; costMax: number; tip: string }; badge: string; badgeClass: string }) {
   const [open, setOpen] = useState(false);
   const [marking, setMarking] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const handleMarkAsDone = () => {
     setMarking(true);
@@ -91,15 +87,8 @@ function PartCard({ part, badge, badgeClass }: { part: { name: string; costMin: 
               {marking ? "Logging..." : "Mark as Done"}
             </button>
           </div>
-          <button 
-             onClick={() => setScheduleOpen(true)}
-             className="w-full h-9 mt-1 rounded-lg bg-secondary border border-border/50 text-muted-foreground text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-secondary/80 hover:text-foreground transition-all"
-          >
-             <MapPin className="w-3.5 h-3.5" /> Book Single Repair Shop
-          </button>
         </div>
       )}
-      <ScheduleSheet open={scheduleOpen} onOpenChange={setScheduleOpen} partName={part.name} />
     </div>
   );
 }
@@ -114,7 +103,6 @@ export default function MaintenanceResults({ vehicleState, result, onBack }: Pro
   };
 
   const navigate = useNavigate();
-  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [costOpen, setCostOpen] = useState(false);
   const [explainOpen, setExplainOpen] = useState(false);
 
@@ -124,7 +112,6 @@ export default function MaintenanceResults({ vehicleState, result, onBack }: Pro
   // ML Processing Pipelines
   const failurePredictions = calculateFailureProbabilities(result);
   const healthContext = calculateHealthScore(result, failurePredictions);
-  const bundleOptimizations = optimizeScheduleBundles(result);
 
   const allParts = [
     ...result.critical.map(({ part }) => ({ part, label: "Critical" as const })),
@@ -151,8 +138,7 @@ export default function MaintenanceResults({ vehicleState, result, onBack }: Pro
       {/* Primary ML Health Gauge Visualization */}
       <HealthGauge context={healthContext} />
 
-      {/* Schedule Optimizer (Bundles overlapping parts) */}
-      <ScheduleOptimizer bundles={bundleOptimizations} />
+      {/* Schedule Optimizer UI Removed */}
 
       {/* Summary Chips */}
       <div className="grid grid-cols-2 gap-3 mt-2">
@@ -235,7 +221,6 @@ export default function MaintenanceResults({ vehicleState, result, onBack }: Pro
         ⚠️ General guidance only. Consult your owner's manual for exact intervals.
       </p>
 
-      <ScheduleSheet open={scheduleOpen} onOpenChange={setScheduleOpen} />
       <CostEstimatorSheet open={costOpen} onOpenChange={setCostOpen} parts={allParts} />
       <ExplainSheet open={explainOpen} onOpenChange={setExplainOpen} parts={allParts} />
     </div>
