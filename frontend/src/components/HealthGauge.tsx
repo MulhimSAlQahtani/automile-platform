@@ -67,13 +67,16 @@ export default function HealthGauge({ context }: Props) {
             />
           </svg>
           <div className="absolute flex flex-col items-center justify-center">
-            <span className={cn("text-4xl font-black tracking-tighter", strokeColor)}>
+            <span className={cn("text-4xl font-black tracking-tighter animate-in zoom-in-50 duration-700", strokeColor)}>
               {healthScore}
             </span>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-2 z-10 bg-background/50 backdrop-blur-md px-4 py-1.5 rounded-full border border-border">
+        <div className={cn(
+          "mt-4 flex items-center justify-center gap-2 z-10 bg-background/50 backdrop-blur-md px-4 py-1.5 rounded-full border border-border transition-all duration-500",
+          healthScore < 40 && "animate-pulse shadow-[0_0_15px_rgba(255,0,0,0.2)]"
+        )}>
           {healthScore >= 85 ? (
             <ShieldCheck className={cn("w-4 h-4", strokeColor)} />
           ) : (

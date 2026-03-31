@@ -23,9 +23,9 @@ export default function AddVehicle() {
   const [formData, setFormData] = useState({
     make: "",
     model: "",
-    year: new Date().getFullYear(),
+    year: "" as unknown as number,
     vin: "",
-    currentMileage: 0,
+    currentMileage: "" as unknown as number,
     type: "car" as VehicleType,
   });
 
@@ -118,7 +118,7 @@ export default function AddVehicle() {
                 type="number"
                 value={formData.year}
                 onChange={(e) => handleChange("year", e.target.value)}
-                placeholder="2022"
+                placeholder={new Date().getFullYear().toString()}
                 className="bg-secondary/30"
                 required
               />
