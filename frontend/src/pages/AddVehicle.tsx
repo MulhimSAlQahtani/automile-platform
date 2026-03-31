@@ -5,6 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { VehicleType } from "@/lib/maintenance-data";
 import { toast } from "sonner";
+import { hapticFeedback } from "@/lib/haptics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,12 +43,14 @@ export default function AddVehicle() {
     e.preventDefault();
     
     if (!formData.make || !formData.model || !formData.vin) {
+      hapticFeedback.warning();
       toast.error("Please fill in all required fields.");
       return;
     }
 
     const sanitizedVin = validateVin(formData.vin);
     if (sanitizedVin.length !== 17) {
+      hapticFeedback.error();
       toast.error("VIN must be exactly 17 characters.");
       return;
     }
@@ -58,6 +61,7 @@ export default function AddVehicle() {
       
       if (auth?.app?.name === "mock-app") {
         await new Promise((resolve) => setTimeout(resolve, 800));
+        hapticFeedback.success();
         toast.success("Mock UI Mode: Vehicle Registered Locally!");
         navigate("/app");
         return;
@@ -81,9 +85,11 @@ export default function AddVehicle() {
 
       await addDoc(collection(db, "users", user.uid, "vehicles"), vehicleData);
       
+      hapticFeedback.success();
       toast.success("Vehicle registered successfully!");
       navigate("/app");
     } catch (error: any) {
+      hapticFeedback.error();
       toast.error(error.message || "Failed to register vehicle.");
     } finally {
       setLoading(false);

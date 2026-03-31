@@ -5,6 +5,7 @@ import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { BiometricAuth } from "@aparajita/capacitor-biometric-auth";
 import { toast } from "sonner";
+import { hapticFeedback } from "@/lib/haptics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -38,8 +39,10 @@ export default function Auth() {
       });
 
       toast.success("Biometric authentication successful!");
+      hapticFeedback.success();
       navigate("/app");
     } catch (error) {
+      hapticFeedback.error();
       toast.error("Biometric authentication failed or canceled.");
     }
   };
@@ -56,9 +59,11 @@ export default function Auth() {
 
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      hapticFeedback.success();
       toast.success("Successfully logged in with Google!");
       navigate("/app");
     } catch (error: any) {
+      hapticFeedback.error();
       toast.error(error.message || "Failed to log in.");
     } finally {
       setLoading(false);
@@ -88,12 +93,19 @@ export default function Auth() {
         await signInWithEmailAndPassword(auth, email, password);
         toast.success("Successfully logged in!");
       }
+      hapticFeedback.success();
       navigate("/app");
     } catch (error: any) {
+      hapticFeedback.error();
       toast.error(error.message || "Authentication failed.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleEmailMode = () => {
+    hapticFeedback.selection();
+    setIsSignUp(!isSignUp);
   };
 
   return (
@@ -182,7 +194,7 @@ export default function Auth() {
               <Button 
                 type="button"
                 variant="link" 
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={toggleEmailMode}
                 className="text-primary text-xs font-bold"
               >
                 {isSignUp ? "Already have an account? Log In" : "Don't have an account? Sign Up"}

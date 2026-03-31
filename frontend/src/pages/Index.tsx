@@ -4,6 +4,7 @@ import MaintenanceResults from "@/components/MaintenanceResults";
 import { VehicleState, VehicleType, analyzeMileageAdvanced, AnalysisResult } from "@/lib/maintenance-data";
 import { Car, Plus, ChevronRight, Settings, Megaphone, Shield, Lock, Database } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { hapticFeedback } from "@/lib/haptics";
 import { auth, db } from "@/lib/firebase";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 
@@ -76,6 +77,7 @@ const Index = () => {
   }, [navigate]);
 
   const handleSelectVehicle = (vehicle: VehicleState) => {
+    hapticFeedback.selection();
     setActiveVehicle(vehicle);
     // Determine the baseline analysis using standard OEM tier tracking
     const analysis = analyzeMileageAdvanced(vehicle, {});
@@ -104,10 +106,19 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Select a vehicle to view its health.</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => navigate('/app/analytics')} className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors">
+                <button 
+                  onClick={() => {
+                    hapticFeedback.light();
+                    navigate('/app/analytics');
+                  }} 
+                  className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+                >
                   <Megaphone className="w-5 h-5" />
                 </button>
-                <button className="w-10 h-10 rounded-full bg-secondary text-foreground flex items-center justify-center hover:bg-muted font-bold transition-colors">
+                <button 
+                  onClick={() => hapticFeedback.light()}
+                  className="w-10 h-10 rounded-full bg-secondary text-foreground flex items-center justify-center hover:bg-muted font-bold transition-colors"
+                >
                   <Settings className="w-5 h-5" />
                 </button>
               </div>
