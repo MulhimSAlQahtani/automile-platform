@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">AutoMile</string>
-    <string name="title_activity_main">AutoMile</string>
-    <string name="package_name">com.automile.app</string>
-    <string name="custom_url_scheme">com.automile.app</string>
-</resources>

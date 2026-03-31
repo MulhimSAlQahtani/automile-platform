@@ -97,7 +97,7 @@ const Index = () => {
             onBack={handleBackToGarage}
           />
         ) : (
-          <div className="flex flex-col gap-6 px-4 py-8 animate-slide-up">
+          <div className="flex flex-col gap-6 px-4 py-8 pt-safe pb-safe animate-slide-up">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-foreground">My Garage</h1>

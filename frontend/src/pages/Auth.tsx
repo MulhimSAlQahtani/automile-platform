@@ -97,7 +97,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-foreground">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 pt-safe pb-safe text-foreground">
       <div className="w-full max-w-sm flex flex-col items-center gap-8 animate-slide-up">
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">

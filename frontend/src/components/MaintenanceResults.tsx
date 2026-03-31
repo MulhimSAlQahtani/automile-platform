@@ -132,7 +132,7 @@ export default function MaintenanceResults({ vehicleState, result, onBack }: Pro
   ];
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-6 animate-slide-up">
+    <div className="flex flex-col gap-6 px-4 py-6 pt-safe pb-safe animate-slide-up">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={onBack} className="p-2 rounded-lg hover:bg-secondary transition-colors">
